@@ -69,7 +69,60 @@ aug=ImageGenerator(
     fill_mode="nearest")
 
 # base model construction-> MobileNetV2
- baseModel=MobileNetV2(weights="imagenet", include_top=False, input_tensor=Input(shape=(224,224,3)))
+baseModel=MobileNetV2(weights="imagenet", include_top=False, input_tensor=Input(shape=(224,224,3)))
+
+# head model(stays on top of the model)
+headModel=baseModel.output
+headModel=AveragePooling2D(pool_size=(7,7))(headModel)
+headModel=Flatten(name="flatten")(headModel)
+headModel=Dense(128, activation="relu")(headModel)
+headModel=Dropout(0.5)(headModel)
+headModel=Dense(128, activation="softmax")(headModel)
 
 
+model=Model(inputs=baseModel.input, outputs=headModel) 
 
+# Loop over all layers in base model so that they dont get updated in first training process
+for layer in baseModel.layers:
+    layer.trainable=False
+
+#model compilation
+print("Compiling Model...")
+opt=Adam(lr=INIT_LR, decay=INIT_LR/EPOCHS)
+model.compile(loss="binary_crossentropy", optimizer=opt, metrics=["accuracy"])
+
+# training the head 
+print("Training head...")
+H=model.fit(
+    aug.flow(trainX, trainY, batch_size=BS),
+    steps_per_epoch=len(trainX)//BS,
+    validation_data=(testX, testY),
+    validation_steps=len(testX)//BS,
+    epochs=EPOCHS)
+
+# making prediction on testing
+print("Evaulating Model...")
+predIdxs=model.predict(testX, batch_size=BS)
+
+predIdxs=np.argmax(predIdxs, axis=1)
+
+# classification report
+print(classification_report(testY.argmax(axis=1), predIdxs, target_names=lb.classes_)) 
+
+# serializing model to disk
+print("Saving Model...")
+model.save(r"C:\Users\KIIT\Documents\College stuffs\Projects\Realtime mask detector\Realtime-mask-detector\mask_detector.model", save_format="h5")
+
+# ploting the training loss and accuracy
+N=EPOCHS
+plt.style.use("ggplot")
+plt.figure()
+plt.plot(np.arange(0,N),H.history["loss"],label="train_loss")
+plt.plot(np.arange(0,N),H.history["val_loss"],label="val_loss")
+plt.plot(np.arange(0,N),H.history["accuracy"],label="train_acc")
+plt.plot(np.arange(0,N),H.history["cal_accuracy"],label="val_acc")
+plt.title("Training Loss and Accuracy")
+plt.xlabel("Epoch #")
+plt.ylabel("Loss/Accuracy")
+plt.legend(loc="lower left")
+plt.savefig(r"C:\Users\KIIT\Documents\College stuffs\Projects\Realtime mask detector\Realtime-mask-detector\plot.png")
