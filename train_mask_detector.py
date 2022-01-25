@@ -21,6 +21,13 @@ import matplotlib.pyplot as plt
 import numpy as np
 import os
 
+# Initial learning rate defined
+INIT_LR = 1e-4
+# Number of epochs
+EPOCHS=20
+# Batch size
+BS=32
+
 # path defined
 DIRECTORY = r"C:\Users\KIIT\Documents\College stuffs\Projects\Realtime mask detector\Realtime-mask-detector\dataset"
 CATEGORIES = ["with_mask", "without_mask"]
@@ -51,6 +58,18 @@ labels=np.array(labels)
 
 (trainX, testX, trainY,testY) = train_test_split(data,labels,test_size=0.20,stratify=labels,random_state=42)
 
+# Image generator for augmentation
+aug=ImageGenerator(
+    rotation_range=20,
+    zoom_range=0.15,
+    width_shift_range=0.2,
+    height_shift_range=0.2,
+    shear_range=0.15,
+    horizontal_flip=True,
+    fill_mode="nearest")
+
+# base model construction-> MobileNetV2
+ baseModel=MobileNetV2(weights="imagenet", include_top=False, input_tensor=Input(shape=(224,224,3)))
 
 
 
