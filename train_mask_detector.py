@@ -59,7 +59,7 @@ labels=np.array(labels)
 (trainX, testX, trainY,testY) = train_test_split(data,labels,test_size=0.20,stratify=labels,random_state=42)
 
 # Image generator for augmentation
-aug=ImageGenerator(
+aug=ImageDataGenerator(
     rotation_range=20,
     zoom_range=0.15,
     width_shift_range=0.2,
@@ -93,7 +93,7 @@ model.compile(loss="binary_crossentropy", optimizer=opt, metrics=["accuracy"])
 
 # training the head 
 print("Training head...")
-H=model.fit(
+H = model.fit(
     aug.flow(trainX, trainY, batch_size=BS),
     steps_per_epoch=len(trainX)//BS,
     validation_data=(testX, testY),
